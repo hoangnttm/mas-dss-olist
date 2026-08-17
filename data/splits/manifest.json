@@ -1,0 +1,193 @@
+{
+  "moc_quyet_dinh": {
+    "t3": "ngay mua + 7 ngay",
+    "t4": "khi danh gia da ve",
+    "t3_cutoff_days": 7
+  },
+  "tong_the": {
+    "tat_ca_don_co_danh_gia": 98673,
+    "con_kip_can_thiep_tai_t3": 75480,
+    "ty_le_giu_lai": 0.765,
+    "dieu_kien": "review_created_at > t3_cutoff",
+    "ap_cho": "CHI giai doan 1 (T3). Giai doan 2 (T4) dung tong the day du — xem docstring cua export_feature_files()"
+  },
+  "khoang_cach_ly": {
+    "train_dropped": 1,
+    "val_dropped": 2245,
+    "moc_cach_ly": "2018-05-31 16:39:30",
+    "ty_le_bat_man_dong_bi_loai": 0.1825,
+    "ty_le_bat_man_dong_giu_lai": 0.1745,
+    "tong_the": "t3 (con kip can thiep)"
+  },
+  "khoang_cach_ly_t4": {
+    "train_dropped": 1,
+    "val_dropped": 2351,
+    "moc_cach_ly": "2018-05-31 16:39:30",
+    "tong_the": "t4 (day du)"
+  },
+  "tep": {
+    "t3_train.parquet": {
+      "so_dong": 52835,
+      "so_cot": 17,
+      "sha256": "fec6b5cd3037617d78323e5cb4ac34d983246ddeb87930a24558008ad36cce46"
+    },
+    "t4_train.parquet": {
+      "so_dong": 63986,
+      "so_cot": 23,
+      "sha256": "12fe0067e39393458706a146e2e00df36c6b4d979f778aac2aad8c0711a18309"
+    },
+    "y_train.parquet": {
+      "so_dong": 63986,
+      "so_cot": 9,
+      "sha256": "799a71faa1d75ed254054622f1e195e4ddd197f3f605e2021c1fd2de11fbc5aa"
+    },
+    "t3_val.parquet": {
+      "so_dong": 9077,
+      "so_cot": 17,
+      "sha256": "b8fc56d93961a54584e8c79f16ad987792c88a99d5d3679b16bcde366d998115"
+    },
+    "t4_val.parquet": {
+      "so_dong": 13383,
+      "so_cot": 23,
+      "sha256": "b224040c52b07ee656dc368a5f622adfd3ce1353cd9412dad11929c94171163a"
+    },
+    "y_val.parquet": {
+      "so_dong": 13383,
+      "so_cot": 9,
+      "sha256": "11fd66fe726139d7c44e2bc447336db000f8de8d5eca6402d56c2c35792ce52a"
+    },
+    "t3_test.parquet": {
+      "so_dong": 11322,
+      "so_cot": 17,
+      "sha256": "84ba0e15c18616d31a59203fd10f0d57f74adf1db9caead9d5bc8bfc6865c675"
+    },
+    "t4_test.parquet": {
+      "so_dong": 18952,
+      "so_cot": 23,
+      "sha256": "2ced570286c3e18b3ac2bd08f3c8dca176569be592d90eda228e9d2529c6d988"
+    },
+    "y_test.parquet": {
+      "so_dong": 18952,
+      "so_cot": 9,
+      "sha256": "803416e4a88dc72135db161c88afa99267d62af73814d6e253ff08188fbf38d7"
+    },
+    "goldset_pool.parquet": {
+      "so_dong": 1615,
+      "so_cot": 10,
+      "sha256": "29bcd52de85bddff5744cea9b649d2d23fe0233b79d90df0ebe530d6b6300119"
+    }
+  },
+  "cot": {
+    "t3": [
+      "order_id",
+      "price",
+      "freight_value",
+      "freight_ratio",
+      "n_items",
+      "n_sellers",
+      "category",
+      "ships_in_days",
+      "seller_distance_km",
+      "seller_prior_orders",
+      "payment_installments",
+      "payment_sequences",
+      "paid_by_credit_card",
+      "delivery_state",
+      "observed_delay_days",
+      "observed_handover_days",
+      "days_to_deadline"
+    ],
+    "t4": [
+      "order_id",
+      "price",
+      "freight_value",
+      "freight_ratio",
+      "n_items",
+      "n_sellers",
+      "category",
+      "ships_in_days",
+      "seller_distance_km",
+      "seller_prior_orders",
+      "payment_installments",
+      "payment_sequences",
+      "paid_by_credit_card",
+      "delivery_state",
+      "observed_delay_days",
+      "observed_handover_days",
+      "days_to_deadline",
+      "carrier_handover_days",
+      "delivery_days",
+      "delivery_delay_days",
+      "is_late",
+      "review_content",
+      "review_title"
+    ]
+  },
+  "seed": 20260809,
+  "tap": {
+    "train": {
+      "so_don_t3": 52835,
+      "so_don_t4": 63986,
+      "ngay_mua_tu": "2016-09-04 21:15:19",
+      "den": "2018-03-22 07:34:13",
+      "ty_le_bat_man": 0.179,
+      "ty_le_bat_man_t4": 0.1612
+    },
+    "val": {
+      "so_don_t3": 9077,
+      "so_don_t4": 13383,
+      "ngay_mua_tu": "2018-03-22 07:38:32",
+      "den": "2018-05-29 13:08:31",
+      "ty_le_bat_man": 0.1482,
+      "ty_le_bat_man_t4": 0.1243
+    },
+    "test": {
+      "so_don_t3": 11322,
+      "so_don_t4": 18952,
+      "ngay_mua_tu": "2018-05-31 16:39:30",
+      "den": "2018-10-17 17:30:18",
+      "ty_le_bat_man": 0.1274,
+      "ty_le_bat_man_t4": 0.1099
+    }
+  },
+  "goldset_pool": {
+    "nguon": "t4_test · CHI tang A (co review_content)",
+    "so_ung_vien": 1615,
+    "so_dong_se_gan_nhan": 300,
+    "so_ung_vien_con_kip_can_thiep": 1108,
+    "tang_b_bi_loai": 468
+  },
+  "anh_chup_ma_tran_thiet_ke": {
+    "mo_ta": "DUNG ma tran da di vao LGBMClassifier.fit() va vao buoc hieu chuan isotonic. Chi muc la order_id (KHONG dua vao mo hinh); cot la RiskModel._columns theo dung thu tu da ghim.",
+    "cot": [
+      "price",
+      "freight_value",
+      "freight_ratio",
+      "n_items",
+      "n_sellers",
+      "category",
+      "ships_in_days",
+      "seller_distance_km",
+      "seller_prior_orders",
+      "payment_installments",
+      "payment_sequences",
+      "paid_by_credit_card",
+      "delivery_state",
+      "observed_delay_days",
+      "observed_handover_days",
+      "days_to_deadline"
+    ],
+    "tep": {
+      "t3_design_train.parquet": {
+        "so_dong": 52835,
+        "so_cot": 16,
+        "sha256": "363f2cd012e3f2a04c650b0fd7c4f0cadaaf5dc005052e4ca27753a728d91079"
+      },
+      "t3_design_val.parquet": {
+        "so_dong": 9077,
+        "so_cot": 16,
+        "sha256": "e1b336a326d6afd8789fea03dbd56435549b4a3c27e2964a8e6397548d322f16"
+      }
+    }
+  }
+}

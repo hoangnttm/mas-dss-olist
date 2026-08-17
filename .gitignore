@@ -9,6 +9,7 @@ __pycache__/
 .claude/settings.local.json
 archive.zip
 
+docs/*
 data/raw/*
 data/interim/*
 data/processed/*
