@@ -1,0 +1,75 @@
+# Cấu hình trung tâm của prototype MAS-DSS.
+project:
+  name: mas-dss-olist
+  random_seed: 42
+
+paths:
+  raw: data/raw
+  interim: data/interim
+  processed: data/processed
+  feature_store: data/processed/order_cases.parquet
+  models: models
+  logs: logs
+  results: reports/results
+  figures: reports/figures
+
+# --- Layer 1: Data Integration -------------------------------------------------
+ingestion:
+  tables:
+    orders: olist_orders_dataset.csv
+    order_items: olist_order_items_dataset.csv
+    order_payments: olist_order_payments_dataset.csv
+    order_reviews: olist_order_reviews_dataset.csv
+    products: olist_products_dataset.csv
+    customers: olist_customers_dataset.csv
+    sellers: olist_sellers_dataset.csv
+    geolocation: olist_geolocation_dataset.csv
+    category_translation: product_category_name_translation.csv
+  validation:
+    fail_on_missing_table: true
+    max_null_ratio: 0.5          # cột vượt ngưỡng này sẽ được cảnh báo
+    drop_duplicate_keys: true
+
+preprocessing:
+  # Chỉ giữ đơn đã giao — vì nhãn hài lòng chỉ có ý nghĩa sau khi khách nhận hàng.
+  keep_order_status: [delivered]
+  dissatisfied_threshold: 3       # review_score <= 3  => không hài lòng (nhãn dương)
+
+# --- Layer 2: Orchestration ----------------------------------------------------
+orchestration:
+  batch_size: 512
+  agent_timeout_s: 30
+  max_retries: 2
+  trace_log: logs/decision_trace.jsonl
+
+# --- Layer 3: Analytics & Intelligence ----------------------------------------
+analytics:
+  late_delivery_days: 0           # actual - estimated > 0 ngày => trễ hẹn
+  high_freight_ratio: 0.25        # freight / price
+  slow_shipping_days: 12          # thời gian giao thực tế
+
+prediction:
+  model: lightgbm                 # lightgbm | logistic_regression | random_forest
+  test_size: 0.2
+  risk_bands:                     # ánh xạ xác suất -> risk_level cho DSS
+    low: 0.35
+    medium: 0.60
+    high: 0.80
+
+root_cause:
+  labels: [delivery, product_quality, customer_service, price]
+  min_confidence: 0.40
+
+# --- Layer 4: Decision Support -------------------------------------------------
+dss:
+  rules_file: config/dss_rules.yaml
+  max_actions_per_case: 3
+
+# --- Layer 5: Evaluation -------------------------------------------------------
+evaluation:
+  baselines: [mis, single_model]
+  metrics: [accuracy, macro_f1, precision, recall, roc_auc, latency_ms, throughput]
+  ablations:                      # causal validity — bỏ từng thành phần
+    - no_root_cause_agent
+    - no_recommendation_agent
+    - no_analytics_features

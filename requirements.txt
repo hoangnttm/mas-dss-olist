@@ -1,0 +1,23 @@
+pandas>=2.2
+numpy>=1.26
+scikit-learn>=1.5
+lightgbm>=4.3
+pyyaml>=6.0
+pydantic>=2.7
+pyarrow>=16.0
+matplotlib>=3.9
+streamlit>=1.36
+plotly>=5.22
+pytest>=8.2
+
+# --- bo sung cho v3 ---
+scipy>=1.13            # kiem dinh tuong duong (H1), thong ke
+hypothesis>=6.100      # property-based test cho bat bien Decision
+pytest-asyncio>=0.23   # test orchestrator bat dong bo
+
+# BERTimbau (Dot 1 - chua can cho Dot 0).
+# Cai ban CPU de tranh keo ve CUDA:
+#   pip install torch --index-url https://download.pytorch.org/whl/cpu
+# torch==2.4.1
+# transformers==4.44.2
+# sentencepiece==0.2.0

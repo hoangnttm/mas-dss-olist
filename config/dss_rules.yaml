@@ -1,0 +1,89 @@
+# Tập luật DSS rule-based (Layer 4.1).
+# Luật được duyệt theo thứ tự priority giảm dần; mỗi luật khớp sinh ra một action
+# kèm severity, và Rule Engine giữ lại tối đa `dss.max_actions_per_case` action.
+#
+# Trường `when` là biểu thức Python an toàn, đánh giá trên namespace phẳng gồm:
+#   risk_level, risk_score, predicted_score, cause_label, cause_probability,
+#   delivery_delay_days, freight_ratio, price, is_late, review_lag_days,
+#   seller_late_rate, category_complaint_rate
+rules:
+  - id: R01
+    name: Giao trễ nghiêm trọng, rủi ro cao
+    when: "risk_level == 'high' and cause_label == 'delivery' and delivery_delay_days > 7"
+    action: expedite_shipment_and_notify_customer
+    severity: urgent
+    escalate_to: logistics_manager
+    priority: 100
+    rationale: "Đơn trễ hẹn trên 7 ngày với xác suất không hài lòng cao — cần can thiệp vận chuyển ngay."
+
+  - id: R02
+    name: Rủi ro cao do giao hàng
+    when: "risk_level in ('high', 'medium') and cause_label == 'delivery' and is_late"
+    action: proactive_delay_apology_and_tracking_update
+    severity: high
+    escalate_to: customer_service
+    priority: 90
+    rationale: "Đơn trễ hẹn — chủ động thông báo tiến độ trước khi khách khiếu nại."
+
+  - id: R03
+    name: Nghi vấn chất lượng sản phẩm
+    when: "cause_label == 'product_quality' and cause_probability >= 0.5 and risk_level != 'low'"
+    action: inspect_seller_and_flag_product_listing
+    severity: high
+    escalate_to: seller_quality_team
+    priority: 85
+    rationale: "Nguyên nhân rủi ro tập trung ở chất lượng sản phẩm — kiểm tra người bán và listing."
+
+  - id: R04
+    name: Người bán có tỷ lệ trễ cao
+    when: "seller_late_rate >= 0.3 and risk_level == 'high'"
+    action: audit_seller_fulfillment_sla
+    severity: high
+    escalate_to: seller_quality_team
+    priority: 80
+    rationale: "Người bán trễ hẹn có hệ thống — rủi ro lặp lại trên nhiều đơn."
+
+  - id: R05
+    name: Phí vận chuyển bất thường
+    when: "cause_label == 'price' and freight_ratio >= 0.25"
+    action: review_freight_pricing_and_offer_voucher
+    severity: medium
+    escalate_to: pricing_team
+    priority: 70
+    rationale: "Phí ship chiếm tỷ trọng lớn so với giá trị hàng — nguồn bất mãn về giá."
+
+  - id: R06
+    name: Rủi ro cao chưa rõ nguyên nhân
+    when: "risk_level == 'high' and cause_probability < 0.4"
+    action: assign_case_to_customer_service_review
+    severity: high
+    escalate_to: customer_service
+    priority: 60
+    rationale: "Dự báo rủi ro cao nhưng phân loại nguyên nhân chưa đủ tin cậy — cần con người xem xét."
+
+  - id: R07
+    name: Vấn đề chăm sóc khách hàng
+    when: "cause_label == 'customer_service' and risk_level != 'low'"
+    action: open_support_ticket_and_contact_customer
+    severity: medium
+    escalate_to: customer_service
+    priority: 55
+    rationale: "Tín hiệu bất mãn liên quan tới hỗ trợ/phản hồi — mở ticket chăm sóc."
+
+  - id: R08
+    name: Rủi ro trung bình — theo dõi
+    when: "risk_level == 'medium'"
+    action: monitor_case
+    severity: monitor
+    escalate_to: none
+    priority: 20
+    rationale: "Rủi ro chưa vượt ngưỡng can thiệp — đưa vào danh sách theo dõi."
+
+  - id: R99
+    name: Không có rủi ro đáng kể
+    when: "risk_level == 'low'"
+    action: no_action
+    severity: none
+    escalate_to: none
+    priority: 1
+    rationale: "Đơn hàng bình thường — không cần can thiệp quản trị."

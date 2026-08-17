@@ -1,0 +1,212 @@
+# Tap luat DSS v3 — hanh dong PHUC HOI DICH VU (service recovery)
+#
+# Phuc vu: RQ2 (chuoi quyet dinh), RQ1 (cuong che DP1).
+#
+# `expedite_shipment` DA BI LOAI: tai T3/T4 hang da giao xong, thuc day van chuyen
+# la bat kha thi ve mat thoi gian. Giu no lai chi de hoi dong tim ra mau thuan.
+#
+# Thu tu danh gia: luat dau tien khop se thang. Luat cuong che (enforced) duoc
+# kiem tra TRUOC moi luat khac va khong the bi ghi de.
+
+version: 3
+
+actions:
+  escalate_to_human:
+    cost: 0.0
+    description: Chuyen cho nguoi xu ly
+  proactive_apology_with_coupon:
+    cost: 15.0
+    description: Chu dong xin loi kem phieu giam gia
+  preemptive_ticket_open:
+    cost: 5.0
+    description: Mo ticket CSKH truoc khi khach khieu nai
+  cs_callback_within_24h:
+    cost: 8.0
+    description: Goi lai trong 24 gio
+  partial_refund:
+    cost: 30.0
+    description: Hoan mot phan tien
+  return_replacement_offer:
+    cost: 40.0
+    description: De nghi doi tra hang
+  seller_audit_flag:
+    cost: 2.0
+    description: Danh dau nguoi ban de ra soat
+  no_action:
+    cost: 0.0
+    description: Khong can thiep
+
+# --- Luat cuong che: kiem tra truoc, khong the bi ghi de ---
+enforced:
+  - id: degraded_system_must_escalate
+    when: degradation_level > 0
+    action: escalate_to_human
+    reason: >
+      DP1 — khong quyet dinh tu dong nao duoc sinh ra tren nen he thong dang suy giam.
+  - id: unknown_cause_must_escalate
+    when: decision_point == "T4" and n_causes == 0
+    action: escalate_to_human
+    reason: >
+      DP3 — khong quy ket duoc nguyen nhan thi chuyen giao, khong doan bua.
+
+# --- Luat nghiep vu: danh gia theo thu tu ---
+rules:
+  - id: multi_cause_high_risk
+    when: multi_cause and risk >= 2
+    action: cs_callback_within_24h
+    reason: Nhieu nguyen nhan dong thoi o don rui ro cao — can nguoi goi truc tiep.
+
+  - id: quality_defect
+    when: has_cause_quality
+    action: return_replacement_offer
+    reason: Loi thuoc ve san pham — doi tra la hanh dong dung ban chat.
+
+  - id: delivery_high_risk
+    when: has_cause_delivery and risk >= 2
+    action: proactive_apology_with_coupon
+    reason: Tre hen nghiem trong — xin loi chu dong truoc khi khach viet danh gia.
+
+  - id: delivery_default
+    when: has_cause_delivery
+    action: preemptive_ticket_open
+    reason: >
+      Da quy ket duoc nguyen nhan giao hang thi phai co hanh dong. Khong rang buoc
+      theo muc rui ro du bao: o T4 su bat man DA XAY RA, rui ro du bao khong con la
+      dieu kien de quyet dinh co can thiep hay khong.
+
+  - id: service_failure
+    when: has_cause_service
+    action: cs_callback_within_24h
+    reason: That bai o khau cham soc — phai co nguoi lien he lai.
+
+  # =====================================================================
+  # LUAT GIAI DOAN 1 @ T3 — phuc hoi dich vu CHU DONG
+  # =====================================================================
+  #
+  # Tai T3 khach CHUA khieu nai va 93,1% don CHUA giao xong, nen khong ton tai
+  # nguyen nhan de quy ket. Moi luat T4 o tren khoa theo `has_cause_*` nen chung
+  # KHONG khop o day — do la ly do truoc 13/08 toan bo don T3 roi vao
+  # `default_action`, va MEDIUM voi HIGH nhan cung mot hanh dong.
+  #
+  # HAI TRUC PHAN BIET, ca hai deu do duoc tren tap test:
+  #
+  #   TIEN DO GIAO HANG. `days_to_deadline` am nghia la DA qua han ngay tai moc.
+  #   No them tin hieu LEN TREN mo hinh rui ro chu khong trung lap voi no:
+  #
+  #       da qua han        1,4% don   bat man 35,22%   lift 2,77x
+  #       con <= 3 ngay     4,1%               24,03%        1,89x
+  #       con 4-10 ngay    18,6%               13,68%        1,07x
+  #       con > 10 ngay    75,9%               11,48%        0,90x
+  #
+  #     Giao thoa voi muc rui ro con manh hon: risk=2 x qua han -> 58,97% (4,63x),
+  #     va ngay ca risk=0 x qua han van 18,57% (1,46x) — TREN ty le nen 12,74%.
+  #     Do la ly do luat `t3_qua_han` khong khoa theo muc rui ro.
+  #
+  #   GIA TRI DON. Nguong KHONG bia: no suy ra tu `max_cost_ratio` cua rang buoc
+  #   `cost_exceeds_order_value` ngay ben duoi. Mot hanh dong gia C chi hop le khi
+  #   C <= 0,35 x gia tri don, tuc don phai >= C / 0,35:
+  #
+  #       proactive_apology_with_coupon  15,0 -> >= 42,86   (91,6% don du dieu kien)
+  #       cs_callback_within_24h          8,0 -> >= 22,86   (99,2%)
+  #       preemptive_ticket_open          5,0 -> >= 14,29   (99,7%)
+  #
+  # Nguong "sap qua han" = 3 ngay duoc dat NGAY TRONG LUAT chu khong an trong ma
+  # nguon, de doi no la sua mot dong cau hinh.
+
+  - id: t3_qua_han_rui_ro_cao
+    when: decision_point == "T3" and risk >= 2 and days_to_deadline < 0 and order_value >= 42.86
+    action: proactive_apology_with_coupon
+    reason: >
+      Da qua han giao ngay tai moc quyet dinh VA mo hinh xep muc rui ro cao — nhom
+      nay co ty le bat man 58,97%, gap 4,63 lan ty le nen. Don du gia tri de chiu
+      chi phi phieu giam gia.
+
+  - id: t3_sap_qua_han_rui_ro_cao
+    when: decision_point == "T3" and risk >= 2 and days_to_deadline >= 0 and days_to_deadline <= 3 and order_value >= 42.86
+    action: proactive_apology_with_coupon
+    reason: >
+      Con toi da 3 ngay den han va rui ro cao — 45,59% bat man (3,58x). Can thiep
+      truoc khi tre xay ra la dung nghia PHUC HOI CHU DONG.
+
+  - id: t3_qua_han
+    when: decision_point == "T3" and days_to_deadline < 0 and order_value >= 22.86
+    action: cs_callback_within_24h
+    reason: >
+      Da qua han giao, o BAT KY muc rui ro nao. Tre hen la su kien DA xay ra chu
+      khong phai du bao, nen no khong can mo hinh xac nhan — ngay nhom risk=0 qua
+      han van co 18,57% bat man, tren ty le nen 12,74%.
+
+  - id: t3_rui_ro_cao
+    when: decision_point == "T3" and risk >= 2
+    action: preemptive_ticket_open
+    reason: >
+      Rui ro cao nhung chua co dau hieu tre — mo ticket de doi ngu CSKH theo doi,
+      chua chi phi cho hanh dong dat hon.
+
+  - id: t3_sap_qua_han
+    when: decision_point == "T3" and risk >= 1 and days_to_deadline >= 0 and days_to_deadline <= 3
+    action: preemptive_ticket_open
+    reason: Sap den han va rui ro tu trung binh tro len — 28,17% bat man (2,21x).
+
+  - id: t3_rui_ro_trung_binh
+    when: decision_point == "T3" and risk >= 1
+    action: preemptive_ticket_open
+    reason: >
+      Rui ro tu trung binh tro len. Day la nhom DONG NHAT (2.414 don, 15,91% bat
+      man) va chiem 63% tong chi phi can thiep — con so do phai duoc bao cao khi
+      ban ve nguong, khong duoc de im.
+
+  - id: no_cause_low_risk
+    when: risk == 0 and n_causes == 0
+    action: no_action
+    reason: >
+      Khong quy ket duoc nguyen nhan VA rui ro thap. Rang buoc `n_causes == 0` la
+      bat buoc: neu da tim ra nguyen nhan thi khong duoc phep khong lam gi, bat ke
+      diem rui ro du bao thap den dau.
+
+# --- HAI LUAT DA GO 13/08, ghi lai de khong ai khoi phuc nham ---
+#
+#   price_complaint -> partial_refund     GO vi nhan `price` da bi go 12/08 cung
+#       voi `PriceAnalyst` (xem `core/ontology.Cause`). `has_cause_price` khong
+#       bao gio con duoc sinh ra, nen luat nay la MA CHET: no o trong tep, doc len
+#       nhu mot chinh sach dang hieu luc, va khong bao gio chay.
+#
+#   repeated_seller -> seller_audit_flag  GO vi `seller_flagged` KHONG NOI NAO
+#       tinh. `facts_from()` nhan no nhu mot tham so co gia tri mac dinh `False`,
+#       va khong mot ben goi nao truyen gia tri khac. Luat luon sai theo cau tao.
+#
+#       De khoi phuc no can mot nang luc moi: thong ke lich su bat man theo nguoi
+#       ban, hoc tu tap train giong `DeliverySignal`. Do la mot capability chu
+#       khong phai mot dong cau hinh, nen no thuoc pham vi mo rong — khong phai
+#       thu de nam im trong tep luat va gia vo dang chay.
+
+default_action: preemptive_ticket_open
+
+# --- Rang buoc cua Policy Critic ---
+#
+# Critic la ENGINE RANG BUOC, khong phai engine huu dung ky vong. No KHONG tuyen bo
+# "hanh dong nay se khong hieu qua" — Olist khong co bien treatment nen khong biet
+# duoc (rang buoc C1). No tuyen bo "hanh dong nay vi pham rang buoc X, do duoc ngay
+# bay gio". Yeu hon, nhung DUNG.
+#
+# Moi rang buoc duoi day tinh duoc tu du lieu that, khong tham so nao bia.
+constraints:
+  - id: cost_exceeds_order_value
+    description: Chi phi hanh dong vuot qua ty le cho phep so voi gia tri don
+    max_cost_ratio: 0.35
+  - id: weak_evidence
+    description: Nguyen nhan manh nhat van duoi nguong tin cay
+    min_cause_probability: 0.45
+  - id: internal_contradiction
+    description: Du bao rui ro cao nhung khong tim ra nguyen nhan nao
+  - id: degraded_system
+    description: He thong dang suy giam ma van sinh hanh dong tu dong
+
+# Thu tu uu tien khi Arbiter phan xu bat dong giua Recommendation va Critic.
+# Khai bao tuong minh o day thay vi mot ham huu dung ky vong, vi khong uoc luong
+# duoc trong so bang tien (C1).
+arbitration_priority:
+  - degraded_system
+  - internal_contradiction
+  - cost_exceeds_order_value
+  - weak_evidence
